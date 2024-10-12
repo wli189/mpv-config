@@ -24,8 +24,6 @@ local menu = {
     type = 'recent_menu',
     title = o.title,
     items = {},
-<<<<<<< HEAD
-=======
     item_actions = {
         {
             name = 'remove',
@@ -35,7 +33,6 @@ local menu = {
     },
     item_actions_place = "outside",
     callback = { mp.get_script_name(), "uosc-callback" }
->>>>>>> 0bc026b098cf3e501fda1505bfc52bc1e404a9d3
 }
 
 local dyn_menu = {
@@ -324,8 +321,6 @@ function append_item(path, title, hint)
     write_json()
 end
 
-<<<<<<< HEAD
-=======
 function remove_item(index)
     table.remove(menu.items, index)
     local json = utils.format_json(clip_uosc_menu_item(menu))
@@ -333,7 +328,6 @@ function remove_item(index)
     write_json()
 end
 
->>>>>>> 0bc026b098cf3e501fda1505bfc52bc1e404a9d3
 function open_menu_uosc()
     local json = utils.format_json(clip_uosc_menu_item(menu))
     mp.commandv('script-message-to', 'uosc', 'open-menu', json)
@@ -461,6 +455,25 @@ end)
 
 mp.register_script_message('uosc-version', function()
     uosc_available = true
+end)
+mp.register_script_message('uosc-callback', function(json)
+    local event = utils.parse_json(json)
+
+    if event.type == "activate" and not event.action then
+        mp.command_native(event.value)
+        mp.commandv('script-message-to', 'uosc', 'close-menu', menu.type)
+        return
+    end
+
+    if event.type == "activate" and event.action == "remove" then
+        remove_item(event.index)
+        return
+    end
+
+    if event.type == "key" and event.id == "del" then
+        remove_item(event.selected_item.index)
+        return
+    end
 end)
 
 mp.register_script_message('command-palette-version', function()
