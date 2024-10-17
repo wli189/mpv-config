@@ -350,7 +350,6 @@ function open_menu_select()
     input.select({
         prompt = menu.title .. ':',
         items = item_titles,
-        default_item = 1,
         submit = function(id)
             mp.commandv(unpack(item_values[id]))
         end,
