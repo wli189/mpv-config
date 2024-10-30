@@ -1,5 +1,5 @@
+local msg = require('mp.msg')
 local utils = require("mp.utils")
-local msg = require 'mp.msg'
 local options = require("options")
 require("api")
 
@@ -8,29 +8,9 @@ local uosc_available = false
 
 function get_animes(query)
     local encoded_query = url_encode(query)
-
     local url = options.api_server .. "/api/v2/search/episodes"
     local params = "anime=" .. encoded_query
     local full_url = url .. "?" .. params
-
-    local cmd = {
-        name = 'subprocess',
-        capture_stdout = true,
-        capture_stderr = true,
-        playback_only = true,
-        args = {
-            "curl",
-            "-L",
-            "-X",
-            "GET",
-            "--header",
-            "Accept: application/json",
-            "--header",
-            "User-Agent: MyCustomUserAgent/1.0",
-            full_url,
-        },
-    }
-
     local items = {}
 
     local message = "加载数据中..."
@@ -39,8 +19,9 @@ function get_animes(query)
     else
         mp.osd_message(message, 30)
     end
+    msg.verbose("尝试获取番剧数据：" .. full_url)
 
-    local res = mp.command_native(cmd)
+    local res = get_danmaku_contents(full_url)
 
     if res.status ~= 0 then
         local message = "获取数据失败"
@@ -49,7 +30,7 @@ function get_animes(query)
         else
             mp.osd_message(message, 3)
         end
-        msg.error("HTTP Request failed: " .. res.stderr)
+        msg.error("HTTP 请求失败：" .. res.stderr)
     end
 
     local response = utils.parse_json(res.stdout)
@@ -105,6 +86,7 @@ function get_episodes(episodes)
         search_style = "disabled",
         items = items,
     }
+
     local json_props = utils.format_json(menu_props)
     if uosc_available then
         mp.commandv("script-message-to", "uosc", "open-menu", json_props)
@@ -272,7 +254,7 @@ end)
 mp.register_script_message("open_search_danmaku_menu", open_input_menu)
 mp.register_script_message("search-anime-event", function(query)
     if uosc_available then
-        mp.commandv("script-message-to", "uosc", "update-menu", "menu_danmaku")
+        mp.commandv("script-message-to", "uosc", "close-menu", "menu_danmaku")
     end
     get_animes(query)
 end)
@@ -293,7 +275,7 @@ mp.register_script_message("add-source-event", function(query)
     if uosc_available then
         mp.commandv("script-message-to", "uosc", "close-menu", "menu_source")
     end
-    add_danmaku_source(query)
+    add_danmaku_source(query, true)
 end)
 
 mp.commandv("script-message-to", "uosc", "set", "show_danmaku", "off")
@@ -332,6 +314,7 @@ mp.register_script_message("show_danmaku_keyboard", function()
             else
                 get_danmaku_with_hash(filename, path)
             end
+            addon_danmaku(path)
         end
         return
     end
